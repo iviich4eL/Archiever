@@ -3,7 +3,10 @@
 #ifndef INCLUDE_ARCHIEVER_H_
 #define INCLUDE_ARCHIEVER_H_
 
+#include "../src/BWTAlgorithm/BWTAlgorithm.h"
+#include "../src/BufferBlock/BufferBlock.h"
 #include "../src/HuffmanAlgorithm/HuffmanAlgorithm.h"
+#include "../src/MTFAlgorithm/MTFAlgorithm.h"
 #include <iostream>
 #include <list>
 #include <map>
@@ -18,15 +21,20 @@ namespace Archiever {
     Things that need to be exposed publicly.
 */
 
-class Hello {
-  public:
-    void Console();
-};
-
 class ArchieverAlgorithm {
   public:
     Internal::HuffmanAlgorithm huffmanAlgorithm;
-    void Compress(const std::string & fileName) { huffmanAlgorithm.Compress(fileName); }
+    Internal::BWTAlgorithm BWTAlgorithm;
+    void Compress(const std::string &fileName) {
+        huffmanAlgorithm.Compress(fileName);
+    }
+    // void Compress2(const std::string &fileName, const size_t blockSize) {
+    //     BWTAlgorithm.Compress(fileName, blockSize);
+    // }
+
+    // void Decompress2(const std::string &fileName) {
+    //     BWTAlgorithm.Decompress(fileName);
+    // }
 };
 
 } // namespace Archiever
