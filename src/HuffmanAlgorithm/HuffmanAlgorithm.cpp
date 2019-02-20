@@ -11,16 +11,29 @@ namespace Internal {
     All the source code and the header files that are for internal use only.
 */
 
-void HuffmanAlgorithm::CreateMap(std::ifstream &inputFile) {
+/*
+    Huffman EOF -- особая константа,
+    необходимая для правильной записи/считывания последнего байта в файле.
+*/
+
+const char H_EOF = 0;
+
+void HuffmanAlgorithm::CreateMap(std::fstream &inputFile) {
     inputFile >> std::noskipws;
     char symbol;
 
     while (inputFile >> symbol) {
         charToFrequencyMap[symbol]++;
     }
+    charToFrequencyMap[H_EOF]++;
 
     for (auto item : charToFrequencyMap) {
-        if (item.first == '\n')
+        if (item.first == H_EOF)
+            std::cout << "\'"
+                      << "H_EOF"
+                      << "\'"
+                      << " : " << item.second << std::endl;
+        else if (item.first == '\n')
             std::cout << "\'"
                       << "\\n"
                       << "\'"
@@ -66,7 +79,9 @@ void HuffmanAlgorithm::PrintHuffmanTree(Internal::Node *root,
         for (unsigned i = 0; i < space; i++)
             std::cout << "  ";
 
-        if (root->symbol != '$')
+        if (root->symbol == H_EOF)
+            std::cout << root->frequency << " ( H_EOF )" << std::endl;
+        else if (root->symbol != '$')
             std::cout << root->frequency << " (" << root->symbol << ")"
                       << std::endl;
         else
@@ -89,12 +104,20 @@ void HuffmanAlgorithm::BuildCodeTable(Internal::Node *root) {
     if (root->symbol && root->symbol != '$')
         charToCodeMap[root->symbol] = code;
 
+    if (root->symbol == H_EOF && root->symbol != '$')
+        charToCodeMap[root->symbol] = code;
+
     code.pop_back();
 }
 
 void HuffmanAlgorithm::PrintCodeTable() {
     for (auto item : charToCodeMap) {
-        if (item.first == '\n')
+        if (item.first == H_EOF)
+            std::cout << "\'"
+                      << "H_EOF"
+                      << "\'"
+                      << " : ";
+        else if (item.first == '\n')
             std::cout << "\'"
                       << "\\n"
                       << "\'"
@@ -109,36 +132,19 @@ void HuffmanAlgorithm::PrintCodeTable() {
 }
 
 void HuffmanAlgorithm::CompressInputAndWriteToOutput(
-    std::ifstream &inputFile, std::ofstream &outputFile) {
-
+    std::fstream &inputFile, std::ofstream &outputFile) {
     int count = 0;
-    // char symbol;
     char byte = 0;
 
-    // while (inputFile >> symbol) {
-    //     std::vector<bool> cachedSymbol = charToCodeMap[symbol];
-
-    //     // for (auto number : cachedSymbol)
-    //     //     std::cout << number;
-
-    //     for (int i = 0; i < cachedSymbol.size(); i++) {
-    //         byte = byte | cachedSymbol[i] << (7 - count);
-    //         count++;
-
-    //         if (count == 8) {
-    //             count = 0;
-    //             outputFile << byte;
-    //             byte = 0;
-    //         }
-    //     }
-    // }
-
     while (!inputFile.eof()) {
-        char symbol;
-        inputFile >> symbol;
+        char symbol = inputFile.get();
         std::vector<bool> cachedSymbol = charToCodeMap[symbol];
 
-        for (int i = 0; i < cachedSymbol.size(); i++) {
+        for (auto number : cachedSymbol)
+            std::cout << number;
+        std::cout << " ";
+
+        for (size_t i = 0; i < cachedSymbol.size(); i++) {
             byte = byte | cachedSymbol[i] << (7 - count);
             count++;
 
@@ -149,47 +155,99 @@ void HuffmanAlgorithm::CompressInputAndWriteToOutput(
             }
         }
     }
+    // std::cout << "count: " << count << std::endl;
+    /*
+        В std::cout и std::stream можно записывать только по 8 бит.
+        Алгоритм Хаффмана представляет каждый символ в виде уникального кода,
+        который на маленьком алфавите вряд ли достигнет 8 бит.
+        Это может привести к всего лишь частичному заполнению последнего байта в
+        файле. Его оставшаяся часть будет представлять из себя бесполезную
+        информацию. Чтобы этого избежать необходимо использовать псевдоконец файла.
+    */
+    std::vector<bool> cachedSymbol = charToCodeMap[H_EOF];
+    int i = 0;
+    while (count != 8) {
+        byte = byte | cachedSymbol[i++] << (7 - count);
+        count++;
+    }
+    outputFile << byte;
+    // std::cout << "i : " << i << std::endl;
 }
 
 void HuffmanAlgorithm::Compress(const std::string &fileName) {
+    std::fstream inputFile(fileName);
     {
-        std::ifstream inputFile(fileName);
 
         CreateMap(inputFile);
+
         CreateList();
+        std::cout << std::endl;
+
         CreateHuffmanTree();
+
         PrintHuffmanTree(root);
+        std::cout << std::endl;
+
         BuildCodeTable(root);
+
         PrintCodeTable();
+        std::cout << std::endl;
 
         inputFile.clear();
         inputFile.seekg(0);
+
         std::ofstream outputFile(fileName + ".bin");
 
         CompressInputAndWriteToOutput(inputFile, outputFile);
+        std::cout << std::endl;
+        std::cout << std::endl;
     }
     // std::cout << std::endl;
-    std::ifstream inputFile(fileName + ".bin");
+    std::ifstream F(fileName + ".bin", std::ios::in | std::ios::binary);
     Internal::Node *node = root;
+    // int count = 0;
+    // алгоритм не доархивирует строку
+
+    Node *p = root;
     int count = 0;
     char byte;
-    // алгоритм не доарзивирует строку
-    while (inputFile >> byte) {
-
-        for (int count = 0; count < 8; count++) {
-            bool bit = byte & (1 << 7 - count);
-
-            if (bit)
-                node = node->right;
-            else
-                node = node->left;
-
-            if (node->left == nullptr && node->right == nullptr) {
-                std::cout << node->symbol;
-                node = root;
+    byte = F.get();
+    while (!F.eof()) {
+        bool b = byte & (1 << (7 - count));
+        if (b)
+            p = p->right;
+        else
+            p = p->left;
+        if (p->left == NULL && p->right == NULL) {
+            if (p->symbol == H_EOF) {
+                break;
             }
+            std::cout << p->symbol;
+            p = root;
         }
-    } 
+        count++;
+        if (count == 8) {
+            count = 0;
+            byte = F.get();
+        }
+    }
+    F.close();
+    // while (inputFile >> byte) {
+
+    //     for (int count = 0; count < 8; count++) {
+    //         bool bit = byte & (1 << (7 - count));
+
+    //         if (bit)
+    //             node = node->right;
+    //         else
+    //             node = node->left;
+
+    //         if (node->left == nullptr && node->right == nullptr) {
+    //             std::cout << node->symbol;
+    //             node = root;
+    //         }
+    //     }
+    // }
 
     // std::cout.clear();
     // inputFile >> byte;
@@ -211,7 +269,6 @@ void HuffmanAlgorithm::Compress(const std::string &fileName) {
     //         inputFile >> byte;
     //     }
     // }
-    inputFile.close();
     // std::ifstream outputFile(fileName + ".bin");
     // outputFile >> std::noskipws;
 }

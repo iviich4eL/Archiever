@@ -23,13 +23,13 @@ class HuffmanAlgorithm {
     std::vector<bool> code;
     std::map<char, std::vector<bool>> charToCodeMap;
 
-    void CreateMap(std::ifstream &);
+    void CreateMap(std::fstream &);
     void CreateList();
     void CreateHuffmanTree();
     void PrintHuffmanTree(Internal::Node *, unsigned);
     void BuildCodeTable(Internal::Node *);
     void PrintCodeTable();
-    void CompressInputAndWriteToOutput(std::ifstream &, std::ofstream &);
+    void CompressInputAndWriteToOutput(std::fstream &, std::ofstream &);
 
   public:
     void Compress(const std::string &);
