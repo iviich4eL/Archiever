@@ -30,6 +30,7 @@ class BufferBlock {
             std::cout << (buffer[i]);
         std::cout << first << last << std::endl;
     }
+    long BufferSize() { return length; }
 };
 } // namespace Internal
 } // namespace Archiever

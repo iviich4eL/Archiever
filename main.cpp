@@ -33,24 +33,23 @@ int main(int argc, char const *argv[]) {
     BufferBlock *bufferBlock = new BufferBlock();
     std::fstream inputFile("input_bwt.txt", std::ios::in | std::ios::binary);
     while (bufferBlock->ReadBlockFromStream(inputFile, 7)) {
-        // bufferBlock->Print();
+        bufferBlock->Print();
 
         BWTAlgorithm bWTAlgorithm(bufferBlock);
         bWTAlgorithm.EncodeByRefParam(*bufferBlock);
-        // bufferBlock->Print();
+        bufferBlock->Print();
 
         MTFAlgorithm mTFAlgorithm;
         mTFAlgorithm.EncodeByRefParam(*bufferBlock);
-        // bufferBlock->Print();
+        bufferBlock->Print();
 
         mTFAlgorithm.DecodeByRefParam(*bufferBlock);
-        // bufferBlock->Print();
+        bufferBlock->Print();
 
         bWTAlgorithm.DecodeByRefParam(*bufferBlock);
         bufferBlock->Print();
     }
-    // bufferBlock->Print();
-    
+
     delete bufferBlock;
     return 0;
 }

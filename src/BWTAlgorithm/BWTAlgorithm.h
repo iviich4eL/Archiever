@@ -36,12 +36,17 @@ class BoundedCompare {
 
 class BWTAlgorithm {
   private:
-    unsigned int T[Archiever::Internal::BLOCK_SIZE + 1];
+    unsigned int TransformationArray[Archiever::Internal::BLOCK_SIZE + 1];
     std::set<unsigned char *, BoundedCompare> *suffixSet;
 
     inline void InsertDataToSuffixSet(Archiever::Internal::BufferBlock &);
     inline Archiever::Internal::BufferBlock
     CreateEncodedBlock(Archiever::Internal::BufferBlock &);
+    inline void
+    FillTransformationArray(Archiever::Internal::BufferBlock &bufferBlock,
+                            unsigned int Count[], unsigned int RunningTotal[]);
+    inline Archiever::Internal::BufferBlock
+    CreateDecodedBlock(Archiever::Internal::BufferBlock &);
     inline void PrintSuffixSet(Archiever::Internal::BufferBlock &bufferBlock);
 
   public:
